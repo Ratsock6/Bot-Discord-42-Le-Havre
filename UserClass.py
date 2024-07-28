@@ -48,6 +48,16 @@ class UserEntry:
 	pool_month: str = ""
 	pool_level: float = 0.0
 	level: float = 0.0
+	pool_exam_final: int = 0
+	pool_exam_02: int = 0
+	pool_exam_01: int = 0
+	pool_exam_00: int = 0
+	exam_06: int = 0
+	exam_05: int = 0
+	exam_04: int = 0
+	exam_03: int = 0
+	exam_02: int = 0
+
 
 user_entry: List[UserEntry] = []
 
@@ -65,18 +75,19 @@ def update_all():
 			x += 1
 			params2['page'] = x
 			resp = requests.get('https://api.intra.42.fr/v2/campus/le-havre/users', headers=headers_campus, params=params2)
-			sleep(0.5)
+			sleep(1)
 			if resp.status_code != 200:
 				print(f"Erreur {resp.status_code}")
 				break
 			if resp.json() == []:
 				is_boucle = False
 				break
-			logins = [user['login'] for user in resp.json()]
-			for user in logins:
-				print(f"Traitement de {user}")
-				user_entry.append(create_user(user))
-			if len(logins) < 100:
+			count = 0
+			for user in resp.json():
+				print(f"Traitement de {user['login']}")
+				user_entry.append(create_user(user['login']))
+				count += 1
+			if count < 100:
 				break
 	print(f"Nombre d'utilisateur : {len(user_entry)}")
 	print(f"-------------------------")
@@ -162,6 +173,14 @@ def create_user(login):
 	final_value.pool_month=pool_month,
 	final_value.pool_level=pool_level,
 	final_value.level=level
+	final_value.pool_exam_final = 0
+	final_value.pool_exam_02 = 0
+	final_value.pool_exam_01 = 0
+	final_value.pool_exam_00 = 0
+	final_value.exam_06 = 0
+	final_value.exam_05 = 0
+	final_value.exam_04 = 0
+	final_value.exam_03 = 0
 	sleep(0.26)
 	return final_value
 

@@ -6,7 +6,7 @@
 #    By: aallou-v <aallou-v@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/07/20 16:14:26 by aallou-v          #+#    #+#              #
-#    Updated: 2024/07/26 18:24:04 by aallou-v         ###   ########.fr        #
+#    Updated: 2024/07/27 16:38:30 by aallou-v         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -74,6 +74,15 @@ async def update(interaction: discord.Interaction, login: Optional[str] = None):
 		else:
 			await interaction.followup.send(f'Utilisateur {login} mis a jour')
 	initiation()
+
+@client.tree.command()
+@app_commands.describe(login='login de la personne dont on veut voir le temps de logtime')
+async def identify(interaction: discord.Interaction):
+	"""Leaderboard of what you want"""
+	if interaction.guild_id is None:
+		return await interaction.response.send_message('This command can only be used in a guild.', ephemeral=True)
+	if interaction.guild_id != MY_GUILD.id:
+		return await interaction.response.send_message('This command is not available in this guild.', ephemeral=True)
 	
 
 @client.tree.command()
