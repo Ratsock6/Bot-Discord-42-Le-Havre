@@ -6,7 +6,7 @@
 #    By: aallou-v <aallou-v@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/07/20 16:14:26 by aallou-v          #+#    #+#              #
-#    Updated: 2024/07/27 16:38:30 by aallou-v         ###   ########.fr        #
+#    Updated: 2024/08/10 22:54:02 by aallou-v         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -75,15 +75,6 @@ async def update(interaction: discord.Interaction, login: Optional[str] = None):
 			await interaction.followup.send(f'Utilisateur {login} mis a jour')
 	initiation()
 
-@client.tree.command()
-@app_commands.describe(login='login de la personne dont on veut voir le temps de logtime')
-async def identify(interaction: discord.Interaction):
-	"""Leaderboard of what you want"""
-	if interaction.guild_id is None:
-		return await interaction.response.send_message('This command can only be used in a guild.', ephemeral=True)
-	if interaction.guild_id != MY_GUILD.id:
-		return await interaction.response.send_message('This command is not available in this guild.', ephemeral=True)
-	
 
 @client.tree.command()
 @app_commands.describe(login='login de la personne dont on veut voir le temps de logtime')
@@ -93,120 +84,104 @@ async def leaderboard(interaction: discord.Interaction, type: Literal['logtime',
 		return await interaction.response.send_message('This command can only be used in a guild.', ephemeral=True)
 	if interaction.guild_id != MY_GUILD.id:
 		return await interaction.response.send_message('This command is not available in this guild.', ephemeral=True)
+	users: List[UserEntry] = []
+	for entry in user_entry:
+		if pool_year is not None:
+			if entry.pool_year[0] != pool_year:
+				continue
+		if pool_month is not None:
+			if entry.pool_month[0] != pool_month:
+				continue
+		users.append(entry)
+	number_of_embed = len(users) / 60
+	number_of_embed = ceil(number_of_embed)
+	if number_of_embed == 0:
+		return await interaction.response.send_message('No data to display', ephemeral=True)
+	embed.clear()
 	if type == 'logtime':
-		users: List[UserEntry] = []
-		for entry in user_entry:
-			if pool_year is not None:
-				if entry.pool_year[0] != pool_year:
-					continue
-			if pool_month is not None:
-				if entry.pool_month[0] != pool_month:
-					continue
-			users.append(entry)
-		number_of_embed = len(users) / 60
-		number_of_embed = ceil(number_of_embed)
-		if number_of_embed == 0:
-			return await interaction.response.send_message('No data to display', ephemeral=True)
-		embed.clear()
 		users.sort(key=lambda x: x.logtime_total, reverse=True)
-		classement = 1
-		for i in range(number_of_embed):
-			embed.append(discord.Embed(title=f'Leaderboard Logtime | Page {i + 1}/{number_of_embed}', description='This is a leaderboard of Logtime', color=0x00ff00))
-			embed[i].description = '```'
-		for entry in users:
-			if pool_year is not None:
-				if entry.pool_year[0] != pool_year:
-					continue
-			if pool_month is not None:
-				if entry.pool_month[0] != pool_month:
-					continue
-			if login is None:
-				embed[(classement - 1) // 60].description += f"{classement} | {entry.login} : {entry.heures}h{entry.minutes}m\n"
-			else:
-				if entry.login == login:
-					return await interaction.response.send_message(f"{login} est {classement} dans le classement (logtime : {entry.heures}h{entry.minutes}m)")
-			classement += 1
-		if login is not None:
-			return await interaction.response.send_message(f"{login} n'est pas dans le classement")
-		for i in range(number_of_embed):
-			embed[i].description += '```'
-			await interaction.channel.send(embed=embed[i])
 	elif type == 'level':
-		users: List[UserEntry] = []
-		for entry in user_entry:
-			if pool_year is not None:
-				if entry.pool_year[0] != pool_year:
-					continue
-			if pool_month is not None:
-				if entry.pool_month[0] != pool_month:
-					continue
-			users.append(entry)
-		number_of_embed = len(users) / 60
-		number_of_embed = ceil(number_of_embed)
-		if number_of_embed == 0:
-			return await interaction.response.send_message('No data to display', ephemeral=True)
-		embed.clear()
 		users.sort(key=lambda x: x.level, reverse=True)
-		classement = 1
-		for i in range(number_of_embed):
-			embed.append(discord.Embed(title=f'Leaderboard Level | Page {i + 1}/{number_of_embed}', description='This is a leaderboard of Logtime', color=0x00ff00))
-			embed[i].description = '```'
-		for entry in users:
-			if pool_year is not None:
-				if entry.pool_year[0] != pool_year:
-					continue
-			if pool_month is not None:
-				if entry.pool_month[0] != pool_month:
-					continue
-			if login is None:
-				embed[(classement - 1) // 60].description += f"{classement} | {entry.login} : {entry.level}\n"
-			else:
-				if entry.login == login:
-					return await interaction.response.send_message(f"{login} est {classement} dans le classement (logtime : {entry.heures}h{entry.minutes}m)")
-			classement += 1
-		if login is not None:
-			return await interaction.response.send_message(f"{login} n'est pas dans le classement")
-		for i in range(number_of_embed):
-			embed[i].description += '```'
-			await interaction.channel.send(embed=embed[i])
 	elif type == 'piscine-level':
-		users: List[UserEntry] = []
-		for entry in user_entry:
-			if pool_year is not None:
-				if entry.pool_year[0] != pool_year:
-					continue
-			if pool_month is not None:
-				if entry.pool_month[0] != pool_month:
-					continue
-			users.append(entry)
-		number_of_embed = len(users) / 60
-		number_of_embed = ceil(number_of_embed)
-		if number_of_embed == 0:
-			return await interaction.response.send_message('No data to display', ephemeral=True)
-		embed.clear()
 		users.sort(key=lambda x: x.pool_level, reverse=True)
-		classement = 1
-		for i in range(number_of_embed):
-			embed.append(discord.Embed(title=f'Leaderboard Piscine Level | Page {i + 1}/{number_of_embed}', description='This is a leaderboard of Logtime', color=0x00ff00))
-			embed[i].description = '```'
-		for entry in users:
-			if pool_year is not None:
-				if entry.pool_year[0] != pool_year:
-					continue
-			if pool_month is not None:
-				if entry.pool_month[0] != pool_month:
-					continue
-			if login is None:
-				embed[(classement - 1) // 60].description += f"{classement} | {entry.login} : {entry.pool_level} level\n"
-			else:
-				if entry.login == login:
-					return await interaction.response.send_message(f"{login} est {classement} dans le classement (level : {entry.pool_level})")
-			classement += 1
-		if login is not None:
-			return await interaction.response.send_message(f"{login} n'est pas dans le classement")
-		for i in range(number_of_embed):
-			embed[i].description += '```'
-			await interaction.channel.send(embed=embed[i])
+	classement = 1
+	for i in range(number_of_embed):
+		embed.append(discord.Embed(title=f'Leaderboard {type} | Page {i + 1}/{number_of_embed}', description='This is a leaderboard of Logtime', color=0x00ff00))
+		embed[i].description = '```'
+	for entry in users:
+		if pool_year is not None:
+			if entry.pool_year[0] != pool_year:
+				continue
+		if pool_month is not None:
+			if entry.pool_month[0] != pool_month:
+				continue
+		if login is None:
+			space = ""
+			new_login = entry.login
+			if classement < 10:
+				space = "   "
+			elif classement < 100:
+				space = "  "
+			elif classement < 1000:
+				space = " "
+			if len(new_login) < 8:
+				while len(new_login) < 8:
+					new_login += " "
+			message = f"{classement}{space} | {new_login} : "
+			if type == 'logtime':
+				message += f"{entry.heures}h{entry.minutes}m"
+			elif type == 'level':
+				message += f"{entry.level}"
+			elif type == 'piscine-level':
+				message += f"{entry.pool_level}"
+			message += '\n'
+			embed[(classement - 1) // 60].description += message
+		else:
+			if entry.login == login:
+				message = f"{login} est {classement} dans le classement ({type} : "
+				if type == 'logtime':
+					message += f"{entry.heures}h{entry.minutes}m"
+				elif type == 'level':
+					message += f"{entry.level}"
+				elif type == 'piscine-level':
+					message += f"{entry.pool_level}"
+				message += ')'
+				return await interaction.response.send_message(message)
+		classement += 1
+	if login is not None:
+		return await interaction.response.send_message(f"{login} n'est pas dans le classement")
+	for i in range(number_of_embed):
+		embed[i].description += '```'
+		await interaction.channel.send(embed=embed[i])
+
+@client.tree.command()
+@app_commands.describe(login='login de la personne dont on veut voir le temps de logtime')
+async def profile(interaction: discord.Interaction, login: Optional[str] = None):
+	"""Look your profile"""
+	if interaction.guild_id is None:
+		return await interaction.response.send_message('This command can only be used in a guild.', ephemeral=True)
+	if interaction.guild_id != MY_GUILD.id:
+		return await interaction.response.send_message('This command is not available in this guild.', ephemeral=True)
+	if login is None:
+		return await interaction.response.send_message('Please provide a login', ephemeral=True)
+	for entry in user_entry:
+		if entry.login == login:
+			embed = discord.Embed(title=f'Profile de {login}', description=f'```Voici le profile de {login}```', color=0x00ff00)
+			embed.add_field(name='Logtime', value=f'{entry.heures}h{entry.minutes}m')
+			embed.add_field(name='Level', value=f'{entry.level}')
+			embed.add_field(name='Pool Level', value=f'{entry.pool_level}')
+			embed.add_field(name='Pool Year', value=f'{entry.pool_year}')
+			embed.add_field(name='Pool Month', value=f'{entry.pool_month}')
+			embed.add_field(name='Pool Exam 00', value=f'{entry.pool_exam_00}')
+			embed.add_field(name='Pool Exam 01', value=f'{entry.pool_exam_01}')
+			embed.add_field(name='Pool Exam 02', value=f'{entry.pool_exam_02}')
+			embed.add_field(name='Pool Exam Final', value=f'{entry.pool_exam_final}')
+			embed.add_field(name='Exam 02', value=f'{entry.exam_02}')
+			embed.add_field(name='Exam 03', value=f'{entry.exam_03}')
+			embed.add_field(name='Exam 04', value=f'{entry.exam_04}')
+			embed.add_field(name='Exam 05', value=f'{entry.exam_05}')
+			embed.add_field(name='Exam 06', value=f'{entry.exam_06}')
+			await interaction.response.send_message(embed=embed)
 		
 
 @client.tree.command()
