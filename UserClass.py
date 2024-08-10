@@ -1,28 +1,48 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict, is_dataclass
 from typing import List
 import requests
 import json
 from time import sleep
-import subprocess
-from init_var import PATH_KODO, KEY_ID, KEY_SECRET
+from init_var import PATH_KODO, KEY_ID, KEY_SECRET, KEY_ID2, KEY_SECRET2, KEY_ID3, KEY_SECRET3
 
-data = {
-    'grant_type': 'client_credentials',
-    'client_id': KEY_ID,
-    'client_secret': KEY_SECRET,
+data_campus = {
+	'grant_type': 'client_credentials',
+	'client_id': KEY_ID,
+	'client_secret': KEY_SECRET,
 }
 
-response = requests.post('https://api.intra.42.fr/oauth/token', data=data)
-
-token_campus = response.json()['access_token']
-token = subprocess.check_output(PATH_KODO, shell=True, text=True).strip()
-
-headers = {
-	'Authorization': 'Bearer ' + token,
+data_first = {
+	'grant_type': 'client_credentials',
+	'client_id': KEY_ID2,
+	'client_secret': KEY_SECRET2,
 }
+
+data_second = {
+	'grant_type': 'client_credentials',
+	'client_id': KEY_ID3,
+	'client_secret': KEY_SECRET3,
+}
+
+response_campus = requests.post('https://api.intra.42.fr/oauth/token', data=data_campus)
+response_first = requests.post('https://api.intra.42.fr/oauth/token', data=data_first)
+response_second = requests.post('https://api.intra.42.fr/oauth/token', data=data_second)
+
+token_campus = response_campus.json()['access_token']
+token_first_request = response_first.json()['access_token']
+token_second_request = response_second.json()['access_token']
+#token = subprocess.check_output(PATH_KODO, shell=True, text=True).strip()
+
 
 headers_campus = {
 	'Authorization': 'Bearer ' + token_campus,
+}
+
+headers_first_request = {
+	'Authorization': 'Bearer ' + token_first_request,
+}
+
+headers_second_request = {
+	'Authorization': 'Bearer ' + token_second_request,
 }
 
 params = {
@@ -32,10 +52,19 @@ params = {
 
 params2 = {
 	'filter[staff?]' : 'false',
-	'filter[pool_year]' : 'None',
+	'filter[pool_year]' : '2023',
+	'filter[pool_month]' : 'august',
 	'page': 0,
 	'per_page': 100,
 }
+
+@dataclass
+class ProjectEntry:
+	name: str = ""
+	state: str = ""
+	note: str = ""
+	finish: bool = False
+	occurence: int = 0
 
 @dataclass
 class UserEntry:
@@ -48,23 +77,34 @@ class UserEntry:
 	pool_month: str = ""
 	pool_level: float = 0.0
 	level: float = 0.0
-	pool_exam_final: int = 0
-	pool_exam_02: int = 0
-	pool_exam_01: int = 0
-	pool_exam_00: int = 0
-	exam_06: int = 0
-	exam_05: int = 0
-	exam_04: int = 0
-	exam_03: int = 0
-	exam_02: int = 0
+	project_number: int = 0
+	profile_img: str = ""
+	profile_img_micro: str = ""
 
+	def to_dict(self):
+		# Convertit la liste de ProjectEntry en une liste de dictionnaires
+		return {
+			"login": self.login,
+			"heures": self.heures,
+			"minutes": self.minutes,
+			"secondes": self.secondes,
+			"logtime_total": self.logtime_total,
+			"pool_year": self.pool_year,
+			"pool_month": self.pool_month,
+			"pool_level": self.pool_level,
+			"level": self.level,
+			"project_number": self.project_number,
+			"project": [asdict(project) for project in self.project if isinstance(project, ProjectEntry)],
+			"profile_img": self.profile_img,
+			"profile_img_micro": self.profile_img_micro
+		}
 
 user_entry: List[UserEntry] = []
 
 def update_all():
 	user_entry.clear()
 	print("Début de l'initialisation cela peut prendre un certain temps")
-	year = 2023
+	year = 2024
 	is_boucle = True
 	while is_boucle:
 		params2['filter[pool_year]'] = str(year)
@@ -75,10 +115,11 @@ def update_all():
 			x += 1
 			params2['page'] = x
 			resp = requests.get('https://api.intra.42.fr/v2/campus/le-havre/users', headers=headers_campus, params=params2)
-			sleep(1)
 			if resp.status_code != 200:
-				print(f"Erreur {resp.status_code}")
+				print(f"Erreur Campus Users {resp.status_code}")
+				is_boucle = False
 				break
+			sleep(1)
 			if resp.json() == []:
 				is_boucle = False
 				break
@@ -86,6 +127,7 @@ def update_all():
 			for user in resp.json():
 				print(f"Traitement de {user['login']}")
 				user_entry.append(create_user(user['login']))
+				sleep(0.5)
 				count += 1
 			if count < 100:
 				break
@@ -127,9 +169,9 @@ def update_user(login):
 
 def create_user(login):
 	final_value = UserEntry()
-	logtime_request = requests.get('https://api.intra.42.fr/v2/users/' + login + '/locations_stats', headers=headers, params=params)
+	logtime_request = requests.get('https://api.intra.42.fr/v2/users/' + login + '/locations_stats', headers=headers_first_request, params=params)
 	if logtime_request.status_code != 200:
-		print(f"Erreur {logtime_request.status_code}")
+		print(f"Erreur Locations Stats {logtime_request.status_code}")
 		return
 	donnees = json.loads(logtime_request.text)
 	hours = 0
@@ -144,9 +186,9 @@ def create_user(login):
 	seconds = seconds % 60
 	hours += int(minutes / 60)
 	minutes = minutes % 60
-	rank = requests.get('https://api.intra.42.fr/v2/users/' + login, headers=headers)
+	rank = requests.get('https://api.intra.42.fr/v2/users/' + login, headers=headers_second_request)
 	if rank.status_code != 200:
-		print(f"Erreur {rank.status_code}")
+		print(f"Erreur User {rank.status_code}")
 		return
 	data = json.loads(rank.text)
 	if data['cursus_users'] is None or len(data['cursus_users']) == 0:
@@ -164,6 +206,8 @@ def create_user(login):
 	else:
 		pool_year = data['pool_year']
 		pool_month = data['pool_month']
+	final_value.profile_img = data['image']['link']
+	final_value.profile_img_micro = data['image']['versions']['micro']
 	final_value.login=login
 	final_value.heures=hours,
 	final_value.minutes=minutes,
@@ -173,15 +217,14 @@ def create_user(login):
 	final_value.pool_month=pool_month,
 	final_value.pool_level=pool_level,
 	final_value.level=level
-	final_value.pool_exam_final = 0
-	final_value.pool_exam_02 = 0
-	final_value.pool_exam_01 = 0
-	final_value.pool_exam_00 = 0
-	final_value.exam_06 = 0
-	final_value.exam_05 = 0
-	final_value.exam_04 = 0
-	final_value.exam_03 = 0
-	sleep(0.26)
+	# rank = requests.get('https://api.intra.42.fr/v2/users/' + login + '/projects_users', headers=headers_campus)
+	# if rank.status_code != 200:
+	# 	print(f"Erreur {rank.status_code}")
+	# 	return
+	# data = json.loads(rank.text)
+	# if data is not None:
+	# 	for iterate in data:
+	# 		final_value.project_number += 1
 	return final_value
 
 def get_user(login):
